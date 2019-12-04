@@ -2,33 +2,22 @@ var fs = require("fs");
 
 let min = 193651, max = 649729;
 
-let pos = 0;
+let r1 = 0, r2 = 0;
 
 for (let i = min; i <= max; i++) {
-    let s = String(i);
-    let stop = false;
+    let s = Array.from(String(i)).map(Number);
+    let sorted = [...s].sort((a, b) => { return a - b; });
 
-    let pairs = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-
-    let first = Number(s[5]);
-    for (let j = 4; j >= 0; j--) {
-        let current = Number(s[j]);
-        if (current > first) {
-            stop = true;        
+    if (s.join("") == sorted.join("")) {
+        let pairs = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        for (let j = 0; j < 5; j++) {
+            if (s[j] == s[j + 1]) pairs[s[j]]++;
         }
 
-        if (current == first) {
-            pairs[current]++;
-        }
-
-        first = current;
+        if (pairs.find((e) => { return e >= 1; }) != undefined) r1++;
+        if (pairs.find((e) => { return e == 1; }) != undefined) r2++;
     }
-
-    if (stop) continue;
-
-    if (pairs.find((e) => { return e == 1; }) == undefined) continue;
-
-    pos++;
 }
 
-console.log(pos);
+console.log(r1);
+console.log(r2);
