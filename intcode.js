@@ -43,14 +43,18 @@ module.exports = class IntcodeComputer {
         this.memory = (input == undefined) ? [] : input;
 
         this._userInput = [];
+
+        this._output = [];
     }
 
     get output() {
-        return this.memory[0];
+        return this._output;
     }
 
     set input(value) {
         this.memory = [...value];
+
+        this._output = [];
     }
 
     set userInput(value) {
@@ -59,6 +63,8 @@ module.exports = class IntcodeComputer {
 
     execute(noun, verb) {
         let index = 0;
+
+        this._output = [];
 
         this.inputIndex = 0;
         this.memory[1] = (noun == undefined) ? this.memory[1] : noun;
@@ -142,7 +148,9 @@ module.exports = class IntcodeComputer {
     }
 
     writeOutput(instruction) {
-        console.log(this.memory[instruction.firstArgumentIndex]);
+        //console.log(this.memory[instruction.firstArgumentIndex]);
+
+        this._output.push(this.memory[instruction.firstArgumentIndex]);
 
         return 2;
     }

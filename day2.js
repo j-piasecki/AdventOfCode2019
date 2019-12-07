@@ -9,7 +9,7 @@ for (let a = 0; a < 100; a++) {
         intcode.input = input;
         intcode.execute(a, b);
 
-        if (intcode.output == 19690720)
+        if (intcode.memory[0] == 19690720)
             console.log(100 * a + b);
     }
 }
