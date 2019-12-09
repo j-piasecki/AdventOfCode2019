@@ -7,6 +7,7 @@ const Opcode = {
     JUMP_IF_FALSE: 6,
     LESS_THAN: 7,
     EQUALS: 8,
+    SET_RELATIVE_BASE: 9,
     HALT: 99
 };
 
@@ -26,15 +27,27 @@ class Instruction {
     }
 
     get firstArgument() {
-        return (this.firstArgumentMode == 1) ? this.firstArgumentIndex : this.computer.memory[this.firstArgumentIndex];
+        if (this.firstArgumentMode == 1) {
+            return this.firstArgumentIndex;
+        } else {
+            return this.computer.memory[this.firstArgumentIndex];
+        }
     }
 
     get secondArgument() {
-        return (this.secondArgumentMode == 1) ? this.secondArgumentIndex : this.computer.memory[this.secondArgumentIndex];
+        if (this.secondArgumentMode == 1) {
+            return this.secondArgumentIndex;
+        } else {
+            return this.computer.memory[this.secondArgumentIndex];
+        }
     }
 
     get thirdArgument() {
-        return (this.thirdArgumentMode == 1) ? this.thirdArgumentIndex : this.computer.memory[this.thirdArgumentIndex];
+        if (this.thirdArgumentMode == 1) {
+            return this.thirdArgumentIndex;
+        } else {
+            return this.computer.memory[this.thirdArgumentIndex];
+        }
     }
 }
 
@@ -55,6 +68,10 @@ module.exports = class IntcodeComputer {
         this.memory = [...value];
 
         this._output = [];
+
+        for (let i = 0; i < value.length * 1000; i++) {
+            this.memory.push(0);
+        }
     }
 
     set userInput(value) {
@@ -67,12 +84,13 @@ module.exports = class IntcodeComputer {
         this._output = [];
 
         this.inputIndex = 0;
+        this.relativeIndex = 0;
         this.memory[1] = (noun == undefined) ? this.memory[1] : noun;
         this.memory[2] = (verb == undefined) ? this.memory[2] : verb;
 
         while (this.memory[index] != Opcode.HALT) {
             let instruction = this.createInstruction(index);
-
+            //console.log(index);
             switch (instruction.opcode) {
                 case Opcode.ADD:
                     index += this.add(instruction);
@@ -106,8 +124,12 @@ module.exports = class IntcodeComputer {
                     index += this.equals(instruction);
                     break;
 
+                case Opcode.SET_RELATIVE_BASE:
+                    index += this.setRelativeBase(instruction);
+                    break;
+
                 default:
-                    console.log("Unknown opcode: " + instruction.opcode);
+                    console.log("Unknown opcode: " + instruction.opcode + " at index: " + index);
                     return;
             }
         }
@@ -125,6 +147,10 @@ module.exports = class IntcodeComputer {
         result.firstArgumentMode = Number(instruction.charAt(instruction.length - 3));
         result.secondArgumentMode = Number(instruction.charAt(instruction.length - 4));
         result.thirdArgumentMode = Number(instruction.charAt(instruction.length - 5));
+
+        if (result.firstArgumentMode == 2) result.firstArgumentIndex += this.relativeIndex;
+        if (result.secondArgumentMode == 2) result.secondArgumentIndex += this.relativeIndex;
+        if (result.thirdArgumentMode == 2) result.thirdArgumentIndex += this.relativeIndex;
 
         return result;
     }
@@ -148,9 +174,9 @@ module.exports = class IntcodeComputer {
     }
 
     writeOutput(instruction) {
-        //console.log(this.memory[instruction.firstArgumentIndex]);
+        console.log(instruction.firstArgument);
 
-        this._output.push(this.memory[instruction.firstArgumentIndex]);
+        this._output.push(instruction.firstArgument);
 
         return 2;
     }
@@ -173,5 +199,11 @@ module.exports = class IntcodeComputer {
         this.memory[instruction.thirdArgumentIndex] = (instruction.firstArgument == instruction.secondArgument) ? 1 : 0;
 
         return 4;
+    }
+
+    setRelativeBase(instruction) {
+        this.relativeIndex += instruction.firstArgument;
+
+        return 2;
     }
 }
