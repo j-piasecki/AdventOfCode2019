@@ -17,37 +17,16 @@ class Instruction {
         this.index = index;
         this.opcode = code;
 
-        this.firstArgumentIndex = 0;
-        this.secondArgumentIndex = 0;
-        this.thirdArgumentIndex = 0;
-
-        this.firstArgumentMode = 0;
-        this.secondArgumentMode = 0;
-        this.thirdArgumentMode = 0;
+        this.argumentModes = [];
+        this.argumentIndexes = [];
     }
 
-    get firstArgument() {
-        if (this.firstArgumentMode == 1) {
-            return this.firstArgumentIndex;
-        } else {
-            return this.computer.memory[this.firstArgumentIndex];
-        }
+    getArgument(i) {
+        return (this.argumentModes[i] == 1) ? this.getArgumentIndex(i) : this.computer.memory[this.getArgumentIndex(i)];
     }
 
-    get secondArgument() {
-        if (this.secondArgumentMode == 1) {
-            return this.secondArgumentIndex;
-        } else {
-            return this.computer.memory[this.secondArgumentIndex];
-        }
-    }
-
-    get thirdArgument() {
-        if (this.thirdArgumentMode == 1) {
-            return this.thirdArgumentIndex;
-        } else {
-            return this.computer.memory[this.thirdArgumentIndex];
-        }
+    getArgumentIndex(i) {
+        return this.argumentIndexes[i] + ((this.argumentModes[i] == 2) ? this.computer.relativeIndex : 0);
     }
 }
 
@@ -90,7 +69,7 @@ module.exports = class IntcodeComputer {
 
         while (this.memory[index] != Opcode.HALT) {
             let instruction = this.createInstruction(index);
-            //console.log(index);
+            
             switch (instruction.opcode) {
                 case Opcode.ADD:
                     index += this.add(instruction);
@@ -137,72 +116,65 @@ module.exports = class IntcodeComputer {
 
     createInstruction(index) {
         let instruction = String(this.memory[index]);
-
         let result = new Instruction(this, index, Number(instruction.charAt(instruction.length - 2) + instruction.charAt(instruction.length - 1)));
 
-        result.firstArgumentIndex = this.memory[index + 1];
-        result.secondArgumentIndex = this.memory[index + 2];
-        result.thirdArgumentIndex = this.memory[index + 3];
+        for (let i = 1; i <= 3; i++)
+            result.argumentIndexes.push(this.memory[index + i]);
 
-        result.firstArgumentMode = Number(instruction.charAt(instruction.length - 3));
-        result.secondArgumentMode = Number(instruction.charAt(instruction.length - 4));
-        result.thirdArgumentMode = Number(instruction.charAt(instruction.length - 5));
-
-        if (result.firstArgumentMode == 2) result.firstArgumentIndex += this.relativeIndex;
-        if (result.secondArgumentMode == 2) result.secondArgumentIndex += this.relativeIndex;
-        if (result.thirdArgumentMode == 2) result.thirdArgumentIndex += this.relativeIndex;
+        for (let i = 3; i <= 5; i++)
+            result.argumentModes.push(Number(instruction.charAt(instruction.length - i)));
 
         return result;
     }
 
     add(instruction) {
-        this.memory[instruction.thirdArgumentIndex] = instruction.firstArgument + instruction.secondArgument;
+        this.memory[instruction.getArgumentIndex(2)] = instruction.getArgument(0) + instruction.getArgument(1);
 
         return 4;
     }
 
     multiply(instruction) {
-        this.memory[instruction.thirdArgumentIndex] = instruction.firstArgument * instruction.secondArgument;
+        this.memory[instruction.getArgumentIndex(2)] = instruction.getArgument(0) * instruction.getArgument(1);
 
         return 4;
     }
 
     getInput(instruction) {
-        this.memory[instruction.firstArgumentIndex] = this._userInput[this.inputIndex++];
+        this.memory[instruction.getArgumentIndex(0)] = this._userInput[this.inputIndex++];
 
         return 2;
     }
 
     writeOutput(instruction) {
-        console.log(instruction.firstArgument);
+        console.log(instruction.getArgument(0));
 
-        this._output.push(instruction.firstArgument);
+        this._output.push(instruction.getArgument(0));
 
         return 2;
     }
 
     jumpIfTrue(instruction) {
-        return (instruction.firstArgument != 0) ? instruction.secondArgument : instruction.index + 3;
+        return (instruction.getArgument(0) != 0) ? instruction.getArgument(1) : instruction.index + 3;
     }
 
     jumpIfFalse(instruction) {
-        return (instruction.firstArgument == 0) ? instruction.secondArgument : instruction.index + 3;
+        return (instruction.getArgument(0) == 0) ? instruction.getArgument(1) : instruction.index + 3;
     }
 
     lessThan(instruction) {
-        this.memory[instruction.thirdArgumentIndex] = (instruction.firstArgument < instruction.secondArgument) ? 1 : 0;
+        this.memory[instruction.getArgumentIndex(2)] = (instruction.getArgument(0) < instruction.getArgument(1)) ? 1 : 0;
 
         return 4;
     }
 
     equals(instruction) {
-        this.memory[instruction.thirdArgumentIndex] = (instruction.firstArgument == instruction.secondArgument) ? 1 : 0;
+        this.memory[instruction.getArgumentIndex(2)] = (instruction.getArgument(0) == instruction.getArgument(1)) ? 1 : 0;
 
         return 4;
     }
 
     setRelativeBase(instruction) {
-        this.relativeIndex += instruction.firstArgument;
+        this.relativeIndex += instruction.getArgument(0);
 
         return 2;
     }
