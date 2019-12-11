@@ -57,8 +57,16 @@ module.exports = class IntcodeComputer {
         this._userInput = [...value];
     }
 
+    get userInput() {
+        return this._userInput;
+    }
+
+    get halted() {
+        return this.memory[this.index] == Opcode.HALT;
+    }
+
     execute(noun, verb) {
-        let index = 0;
+        this.index = 0;
 
         this._output = [];
 
@@ -67,50 +75,71 @@ module.exports = class IntcodeComputer {
         this.memory[1] = (noun == undefined) ? this.memory[1] : noun;
         this.memory[2] = (verb == undefined) ? this.memory[2] : verb;
 
-        while (this.memory[index] != Opcode.HALT) {
-            let instruction = this.createInstruction(index);
+        while (!this.halted) {
+            let instruction = this.createInstruction(this.index);
             
-            switch (instruction.opcode) {
-                case Opcode.ADD:
-                    index += this.add(instruction);
-                    break;
+            let result = this.executeInstruction(instruction);
+            if (Number.isNaN(result)) return;
+            
+            this.index += result;
+        }
+    }
 
-                case Opcode.MULTIPLY:
-                    index += this.multiply(instruction);
-                    break;
+    start() {
+        this.index = 0;
+        this._output = [];
+        this.inputIndex = 0;
+        this.relativeIndex = 0;
 
-                case Opcode.INPUT:
-                    index += this.getInput(instruction);
-                    break;
+        this.continue();
+    }
 
-                case Opcode.OUTPUT:
-                    index += this.writeOutput(instruction);
-                    break;
+    continue() {
+        while (!this.halted) {
+            let instruction = this.createInstruction(this.index);
+            
+            if (instruction.opcode == Opcode.INPUT && this._userInput[this.inputIndex] == undefined)
+                break;
 
-                case Opcode.JUMP_IF_TRUE:
-                    index = this.jumpIfTrue(instruction)
-                    break;
+            let result = this.executeInstruction(instruction);
+            if (Number.isNaN(result)) return;
 
-                case Opcode.JUMP_IF_FALSE:
-                    index = this.jumpIfFalse(instruction)
-                    break;
+            this.index += result;
+        }
+    }
 
-                case Opcode.LESS_THAN:
-                    index += this.lessThan(instruction);
-                    break;
-                    
-                case Opcode.EQUALS:
-                    index += this.equals(instruction);
-                    break;
+    executeInstruction(instruction) {
+        switch (instruction.opcode) {
+            case Opcode.ADD:
+                return this.add(instruction);
 
-                case Opcode.SET_RELATIVE_BASE:
-                    index += this.setRelativeBase(instruction);
-                    break;
+            case Opcode.MULTIPLY:
+                return this.multiply(instruction);
 
-                default:
-                    console.log("Unknown opcode: " + instruction.opcode + " at index: " + index);
-                    return;
-            }
+            case Opcode.INPUT:
+                return this.getInput(instruction);
+
+            case Opcode.OUTPUT:
+                return this.writeOutput(instruction);
+
+            case Opcode.JUMP_IF_TRUE:
+                return this.jumpIfTrue(instruction)
+
+            case Opcode.JUMP_IF_FALSE:
+                return this.jumpIfFalse(instruction)
+
+            case Opcode.LESS_THAN:
+                return this.lessThan(instruction);
+                
+            case Opcode.EQUALS:
+                return this.equals(instruction);
+
+            case Opcode.SET_RELATIVE_BASE:
+                return this.setRelativeBase(instruction);
+
+            default:
+                console.log("Unknown opcode: " + instruction.opcode + " at index: " + instruction.index);
+                return NaN;
         }
     }
 
@@ -154,11 +183,11 @@ module.exports = class IntcodeComputer {
     }
 
     jumpIfTrue(instruction) {
-        return (instruction.getArgument(0) != 0) ? instruction.getArgument(1) : instruction.index + 3;
+        return (instruction.getArgument(0) != 0) ? instruction.getArgument(1) - instruction.index : 3;
     }
 
     jumpIfFalse(instruction) {
-        return (instruction.getArgument(0) == 0) ? instruction.getArgument(1) : instruction.index + 3;
+        return (instruction.getArgument(0) == 0) ? instruction.getArgument(1) - instruction.index : 3;
     }
 
     lessThan(instruction) {
