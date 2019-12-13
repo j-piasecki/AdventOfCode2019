@@ -175,7 +175,7 @@ module.exports = class IntcodeComputer {
     }
 
     writeOutput(instruction) {
-        console.log(instruction.getArgument(0));
+        //console.log(instruction.getArgument(0));
 
         this._output.push(instruction.getArgument(0));
 
