@@ -65,6 +65,14 @@ module.exports = class IntcodeComputer {
         return this.memory[this.index] == Opcode.HALT;
     }
 
+    pushLine(line) {
+        for (let i = 0; i < line.length; i++) {
+            this._userInput.push(line.charCodeAt(i));
+        }
+
+        this._userInput.push(10);
+    }
+
     execute(noun, verb) {
         this.index = 0;
 
